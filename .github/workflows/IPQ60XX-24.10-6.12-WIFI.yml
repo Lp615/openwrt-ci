@@ -113,7 +113,6 @@ jobs:
 
           # 追加函数声明到头文件
           cat >> $OAF_DIR/src/app_filter.h << 'EOF'
-
 // --- Auto-added for compatibility with kernel 6.12 ---
 int match_feature(flow_info_t *flow);
 int match_app_filter_rule(int appid, af_client_info_t *client);
