@@ -139,7 +139,6 @@ EOF
           echo "⚠ OAF directory not found, skipping patch."
         fi
 
-  
     - name: Load Custom Configuration(加载自定义配置)
       run: |
         [ -e files ] && mv files $OPENWRT_PATH/files
