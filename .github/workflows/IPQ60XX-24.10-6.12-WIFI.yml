@@ -111,27 +111,27 @@ jobs:
           # 添加编译参数
           echo 'TARGET_CFLAGS += -Wno-error=missing-prototypes -Wno-error=unused-variable' >> $OAF_DIR/Makefile
 
-          # 追加函数声明到头文件
+          # 追加函数声明到头文件 (Indentation fixed below)
           cat >> $OAF_DIR/src/app_filter.h << 'EOF'
-// --- Auto-added for compatibility with kernel 6.12 ---
-int match_feature(flow_info_t *flow);
-int match_app_filter_rule(int appid, af_client_info_t *client);
-int af_update_client_app_info(af_client_info_t *node, int app_id, int drop);
-int af_match_bcast_packet(flow_info_t *f);
-int af_match_local_packet(flow_info_t *f);
-int update_url_visiting_info(af_client_info_t *client, flow_info_t *flow);
-int dpi_main(struct sk_buff *skb, flow_info_t *flow);
-void af_get_smac(struct sk_buff *skb, u_int8_t *smac);
-int is_ipv4_broadcast(uint32_t ip);
-int is_ipv4_multicast(uint32_t ip);
-int af_check_bcast_ip(flow_info_t *f);
-u_int32_t app_filter_hook_bypass_handle(struct sk_buff *skb, struct net_device *dev);
-u_int32_t app_filter_hook_gateway_handle(struct sk_buff *skb, struct net_device *dev);
-void init_oaf_timer(void);
-void fini_oaf_timer(void);
-int netlink_oaf_init(void);
-// --- end patch ---
-EOF
+        // --- Auto-added for compatibility with kernel 6.12 ---
+        int match_feature(flow_info_t *flow);
+        int match_app_filter_rule(int appid, af_client_info_t *client);
+        int af_update_client_app_info(af_client_info_t *node, int app_id, int drop);
+        int af_match_bcast_packet(flow_info_t *f);
+        int af_match_local_packet(flow_info_t *f);
+        int update_url_visiting_info(af_client_info_t *client, flow_info_t *flow);
+        int dpi_main(struct sk_buff *skb, flow_info_t *flow);
+        void af_get_smac(struct sk_buff *skb, u_int8_t *smac);
+        int is_ipv4_broadcast(uint32_t ip);
+        int is_ipv4_multicast(uint32_t ip);
+        int af_check_bcast_ip(flow_info_t *f);
+        u_int32_t app_filter_hook_bypass_handle(struct sk_buff *skb, struct net_device *dev);
+        u_int32_t app_filter_hook_gateway_handle(struct sk_buff *skb, struct net_device *dev);
+        void init_oaf_timer(void);
+        void fini_oaf_timer(void);
+        int netlink_oaf_init(void);
+        // --- end patch ---
+        EOF
 
           echo "✅ OAF patch applied successfully!"
         else
