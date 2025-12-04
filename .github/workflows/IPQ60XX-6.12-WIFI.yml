@@ -111,7 +111,7 @@ jobs:
 
           # 1. 创建并写入所有缺失的原型到 app_filter.h
           mkdir -p $OAF_DIR/src
-          cat > "$OAF_HEADER" << 'EOF'
+          cat > "$OAF_HEADER" <<- 'EOF'
 // Prototypes manually added for kernel 6.12 compatibility
 int match_feature(flow_info_t *flow);
 int match_app_filter_rule(int appid, af_client_info_t *client);
@@ -130,7 +130,7 @@ void init_oaf_timer(void);
 void fini_oaf_timer(void);
 int netlink_oaf_init(void);
 // --- end patch ---
-EOF
+          EOF
           echo "✅ Created $OAF_HEADER with all required prototypes."
 
           # 2. 在 app_filter.c 中包含 app_filter.h (插入到文件顶部)
