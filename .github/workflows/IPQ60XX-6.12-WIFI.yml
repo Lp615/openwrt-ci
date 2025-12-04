@@ -98,55 +98,61 @@ jobs:
         rm -rf package/new/custom
         ./scripts/feeds install -a
 
-    - name: Patch OpenAppFilter for kernel 6.12
+    - name: Patch OpenAppFilter for kernel 6.12 (Clean Source Fix)
       run: |
-        echo "🔧 Applying OAF patch for kernel 6.12..."
+        echo "🔧 Applying OAF clean source patch for kernel 6.12..."
 
         OAF_DIR="$OPENWRT_PATH/feeds/packages/net/open-app-filter"
-        OAF_HEADER="$OAF_DIR/src/app_filter.h" # 定义头文件路径
-
-        if [ -d "$OAF_DIR" ]; then
-          echo "Found OAF in $OAF_DIR"
-
-          # 确保目标目录存在
-          mkdir -p $OAF_DIR/src
-          
-          # 如果头文件不存在（最可能的原因），则创建一个空文件
-          if [ ! -f "$OAF_HEADER" ]; then
-            touch "$OAF_HEADER"
-            echo "Header file $OAF_HEADER was missing and has been created."
-          fi
-
-          # 关闭 Werror 避免严格编译导致报错
-          sed -i 's/-Werror//g' $OAF_DIR/src/Makefile 2>/dev/null || true
-          sed -i 's/-Werror//g' $OAF_DIR/Makefile 2>/dev/null || true
-
-          # 添加编译参数
-          echo 'TARGET_CFLAGS += -Wno-error=missing-prototypes -Wno-error=unused-variable' >> $OAF_DIR/Makefile
-
-          # 追加函数声明到头文件 (现在文件已确保存在)
-          cat >> $OAF_HEADER << 'EOF'
-        // --- Auto-added for compatibility with kernel 6.12 ---
-        int match_feature(flow_info_t *flow);
-        int match_app_filter_rule(int appid, af_client_info_t *client);
-        int af_update_client_app_info(af_client_info_t *node, int app_id, int drop);
-        int af_match_bcast_packet(flow_info_t *f);
-        int af_match_local_packet(flow_info_t *f);
-        int update_url_visiting_info(af_client_info_t *client, flow_info_t *flow);
-        int dpi_main(struct sk_buff *skb, flow_info_t *flow);
-        void af_get_smac(struct sk_buff *skb, u_int8_t *smac);
-        int is_ipv4_broadcast(uint32_t ip);
-        int is_ipv4_multicast(uint32_t ip);
-        int af_check_bcast_ip(flow_info_t *f);
-        u_int32_t app_filter_hook_bypass_handle(struct sk_buff *skb, struct net_device *dev);
-        u_int32_t app_filter_hook_gateway_handle(struct sk_buff *skb, struct net_device *dev);
-        void init_oaf_timer(void);
-        void fini_oaf_timer(void);
-        int netlink_oaf_init(void);
-        // --- end patch ---
-        EOF
+        OAF_C_FILE="$OAF_DIR/src/app_filter.c"
+        OAF_HEADER="$OAF_DIR/src/app_filter.h"
         
-          echo "✅ OAF patch applied successfully!"
+        if [ -d "$OAF_DIR" ]; then
+          echo "Found OAF in $OAF_DIR. Applying source code modifications..."
+
+          # 1. 创建并写入所有缺失的原型到 app_filter.h
+          mkdir -p $OAF_DIR/src
+          cat > "$OAF_HEADER" << 'EOF'
+// Prototypes manually added for kernel 6.12 compatibility
+int match_feature(flow_info_t *flow);
+int match_app_filter_rule(int appid, af_client_info_t *client);
+int af_update_client_app_info(af_client_info_t *node, int app_id, int drop);
+int af_match_bcast_packet(flow_info_t *f);
+int af_match_local_packet(flow_info_t *f);
+int update_url_visiting_info(af_client_info_t *client, flow_info_t *flow);
+int dpi_main(struct sk_buff *skb, flow_info_t *flow);
+void af_get_smac(struct sk_buff *skb, u_int8_t *smac);
+int is_ipv4_broadcast(uint32_t ip);
+int is_ipv4_multicast(uint32_t ip);
+int af_check_bcast_ip(flow_info_t *f);
+u_int32_t app_filter_hook_bypass_handle(struct sk_buff *skb, struct net_device *dev);
+u_int32_t app_filter_hook_gateway_handle(struct sk_buff *skb, struct net_device *dev);
+void init_oaf_timer(void);
+void fini_oaf_timer(void);
+int netlink_oaf_init(void);
+// --- end patch ---
+EOF
+          echo "✅ Created $OAF_HEADER with all required prototypes."
+
+          # 2. 在 app_filter.c 中包含 app_filter.h (插入到文件顶部)
+          if [ -f "$OAF_C_FILE" ]; then
+              sed -i '1i\#include "app_filter.h"' "$OAF_C_FILE"
+              echo "✅ Added #include \"app_filter.h\" to $OAF_C_FILE."
+
+              # 3. 修复未使用的变量 'smac' 错误: 将变量声明注释掉 (app_filter.c:1286)
+              # 使用正则表达式匹配并注释掉该行，以解决 -Wunused-variable 警告
+              sed -i 's/^\([[:space:]]*u_int8_t smac\[ETH_ALEN\];\)/ \/\/ \1/' "$OAF_C_FILE"
+              echo "✅ Commented out unused 'smac' variable declaration in $OAF_C_FILE."
+          else
+              echo "⚠ $OAF_C_FILE not found, skipping C file modification."
+          fi
+          
+          # 4. 移除 Makefile 中的 -Werror 标志作为安全措施 (保留此步骤)
+          OAF_SRC_MAKEFILE="$OAF_DIR/src/Makefile"
+          OAF_PKG_MAKEFILE="$OAF_DIR/Makefile"
+          sed -i 's/-Werror//g' $OAF_SRC_MAKEFILE 2>/dev/null || true
+          sed -i 's/-Werror//g' $OAF_PKG_MAKEFILE 2>/dev/null || true
+          echo "✅ Removed -Werror flags from Makefiles as a safeguard."
+
         else
           echo "⚠ OAF directory not found, skipping patch."
         fi
