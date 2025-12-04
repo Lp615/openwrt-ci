@@ -103,9 +103,19 @@ jobs:
         echo "🔧 Applying OAF patch for kernel 6.12..."
 
         OAF_DIR="$OPENWRT_PATH/feeds/packages/net/open-app-filter"
+        OAF_HEADER="$OAF_DIR/src/app_filter.h" # 定义头文件路径
 
         if [ -d "$OAF_DIR" ]; then
           echo "Found OAF in $OAF_DIR"
+
+          # 确保目标目录存在
+          mkdir -p $OAF_DIR/src
+          
+          # 如果头文件不存在（最可能的原因），则创建一个空文件
+          if [ ! -f "$OAF_HEADER" ]; then
+            touch "$OAF_HEADER"
+            echo "Header file $OAF_HEADER was missing and has been created."
+          fi
 
           # 关闭 Werror 避免严格编译导致报错
           sed -i 's/-Werror//g' $OAF_DIR/src/Makefile 2>/dev/null || true
@@ -114,8 +124,8 @@ jobs:
           # 添加编译参数
           echo 'TARGET_CFLAGS += -Wno-error=missing-prototypes -Wno-error=unused-variable' >> $OAF_DIR/Makefile
 
-          # 追加函数声明到头文件 (Indentation fixed below)
-          cat >> $OAF_DIR/src/app_filter.h << 'EOF'
+          # 追加函数声明到头文件 (现在文件已确保存在)
+          cat >> $OAF_HEADER << 'EOF'
         // --- Auto-added for compatibility with kernel 6.12 ---
         int match_feature(flow_info_t *flow);
         int match_app_filter_rule(int appid, af_client_info_t *client);
@@ -135,7 +145,7 @@ jobs:
         int netlink_oaf_init(void);
         // --- end patch ---
         EOF
-
+        
           echo "✅ OAF patch applied successfully!"
         else
           echo "⚠ OAF directory not found, skipping patch."
