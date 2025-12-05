@@ -138,10 +138,10 @@ jobs:
               sed -i '1i\#include "app_filter.h"' "$OAF_C_FILE"
               echo "✅ Added #include \"app_filter.h\" to $OAF_C_FILE."
 
-              # 3. 修复未使用的变量 'smac' 错误: 将变量声明注释掉 (app_filter.c:1286)
-              # 使用正则表达式匹配并注释掉该行，以解决 -Wunused-variable 警告
-              sed -i 's/^\([[:space:]]*u_int8_t smac\[ETH_ALEN\];\)/ \/\/ \1/' "$OAF_C_FILE"
-              echo "✅ Commented out unused 'smac' variable declaration in $OAF_C_FILE."
+              # 3. 修复未使用的变量 'smac' 错误: 使用 __maybe_unused 宏
+              # 将 'u_int8_t smac[ETH_ALEN];' 替换为 'u_int8_t smac[ETH_ALEN] __maybe_unused;'
+              sed -i 's/\([[:space:]]*u_int8_t smac\[ETH_ALEN\];\)/\1 __maybe_unused;/' "$OAF_C_FILE"
+              echo "✅ Fixed unused 'smac' variable declaration using __maybe_unused in $OAF_C_FILE."
           else
               echo "⚠ $OAF_C_FILE not found, skipping C file modification."
           fi
